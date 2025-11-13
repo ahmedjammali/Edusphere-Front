@@ -1,0 +1,426 @@
+<!-- payment-dialog.component.html - Fixed Version -->
+<div class="payment-dialog-container">
+  <!-- Dialog Header -->
+  <div class="dialog-header">
+    <div class="header-content">
+      <div class="title-section">
+        <span class="title-icon">{{ getComponentIcon() }}</span>
+        <h2 class="dialog-title">{{ getDialogTitle() }}</h2>
+        <span class="component-badge" [style.background-color]="getComponentColor()">
+          {{ getComponentLabel() }}
+        </span>
+      </div>
+      <button class="close-btn" (click)="onCancel()" type="button" aria-label="Fermer">
+        <span class="close-icon">✖️</span>
+      </button>
+    </div>
+    
+    <!-- Student Information -->
+    <div class="student-info-header">
+      <div class="student-avatar">
+        <span class="avatar-icon">{{ data.student.name.charAt(0).toUpperCase() }}</span>
+      </div>
+      <div class="student-details">
+        <h3 class="student-name">{{ data.student.name }}</h3>
+        <div class="student-meta">
+          <span class="meta-item">
+            <span class="meta-icon">🏫</span>
+            {{ getStudentClass() }}
+          </span>
+          <span class="meta-item">
+            <span class="meta-icon">📚</span>
+            {{ getStudentGrade() }}
+          </span>
+          <span class="meta-item" *ngIf="data.student.paymentRecord">
+            <span class="meta-icon">💰</span>
+            Reste: {{ formatCurrency(getTotalRemainingAmount()) }}
+          </span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Dialog Content -->
+  <div class="dialog-content">
+    <form [formGroup]="paymentForm" class="payment-form" (ngSubmit)="onSubmit()">
+      
+      <!-- Component-Specific Information -->
+      <div class="component-info-section">
+        <div class="component-summary">
+          <h4 class="component-title">
+            <span class="component-icon">{{ getComponentIcon() }}</span>
+            {{ getComponentLabel() }}
+          </h4>
+          <div class="component-details">
+            <div class="detail-item">
+              <span class="detail-label">Type de paiement:</span>
+              <span class="detail-value">{{ data.type === 'annual' ? 'Annuel' : getPaymentTypeLabel() }}</span>
+            </div>
+            <div class="detail-item" *ngIf="data.component === 'transportation' && getTransportationType()">
+              <span class="detail-label">Zone de transport:</span>
+              <span class="detail-value">{{ getTransportationType() | titlecase }}</span>
+            </div>
+            <div class="detail-item" *ngIf="data.component === 'uniform'">
+              <span class="detail-label">Paiement:</span>
+              <span class="detail-value">Unique (début d'année)</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Month Selection for Monthly Payment (NOT for Uniform) -->
+      <!-- Month Selection for Monthly Payment (NOT for Uniform or Inscription Fee) -->
+<div class="form-section month-selection" 
+     *ngIf="data.type === 'monthly' && 
+            data.component !== 'uniform' && 
+            data.component !== 'inscriptionFee' &&
+            (data.component === 'tuition' || data.component === 'transportation')">
+        <div class="section-header">
+          <h4 class="section-title">
+            <span class="section-icon">📅</span>
+            Sélection du Mois
+          </h4>
+        </div>
+        
+        <div class="form-group">
+          <label for="monthSelect" class="form-label">Choisir le mois à payer *</label>
+          <div class="month-selector">
+            <select 
+              id="monthSelect"
+              formControlName="monthIndex" 
+              class="form-select month-select"
+              (change)="onMonthSelect($event)">
+              <option value="" disabled>Sélectionner un mois</option>
+              <option *ngFor="let month of getUnpaidMonths(); let i = index" 
+                      [value]="getMonthIndex(month)">
+                {{ month.monthName }} - {{ formatCurrency(month.amount - month.paidAmount) }}
+                <span *ngIf="isMonthOverdue(month)" class="overdue-indicator"> (En retard)</span>
+              </option>
+            </select>
+          </div>
+          <div class="form-error" *ngIf="isFieldInvalid('monthIndex')">
+            {{ getFieldError('monthIndex') }}
+          </div>
+        </div>
+
+        <!-- Selected Month Details -->
+        <div class="selected-month-card" *ngIf="selectedMonth">
+          <div class="month-card-header">
+            <h5 class="month-name">{{ selectedMonth.monthName }}</h5>
+            <span class="status-badge" [class]="'status-' + selectedMonth.status">
+              {{ getStatusLabel(selectedMonth.status) }}
+            </span>
+            <span class="overdue-badge" *ngIf="isMonthOverdue(selectedMonth)">
+              En retard
+            </span>
+          </div>
+          
+          <div class="month-financial-grid">
+            <div class="financial-item">
+              <span class="financial-label">Montant dû</span>
+              <span class="financial-value total-due">{{ formatCurrency(selectedMonth.amount) }}</span>
+            </div>
+            <div class="financial-item" *ngIf="selectedMonth.paidAmount > 0">
+              <span class="financial-label">Déjà payé</span>
+              <span class="financial-value paid">{{ formatCurrency(selectedMonth.paidAmount) }}</span>
+            </div>
+            <div class="financial-item highlight">
+              <span class="financial-label">Reste à payer</span>
+              <span class="financial-value remaining">{{ formatCurrency(selectedMonth.amount - selectedMonth.paidAmount) }}</span>
+            </div>
+          </div>
+          
+          <div class="due-date-info" *ngIf="selectedMonth.dueDate">
+            <span class="due-date-label">Date d'échéance:</span>
+            <span class="due-date-value" [class.overdue]="isMonthOverdue(selectedMonth)">
+              {{ formatDate(selectedMonth.dueDate) }}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Uniform Payment Info -->
+      <div class="form-section uniform-info" *ngIf="data.component === 'uniform'">
+        <div class="section-header">
+          <h4 class="section-title">
+            <span class="section-icon">👔</span>
+            Informations Uniforme
+          </h4>
+        </div>
+        
+        <div class="uniform-details" *ngIf="data.student.paymentRecord?.uniform">
+          <div class="uniform-summary">
+            <div class="summary-item">
+              <span class="summary-label">Prix de l'uniforme:</span>
+              <span class="summary-value">{{ formatCurrency(data.student.paymentRecord?.uniform?.price || 0) }}</span>
+            </div>
+            <div class="summary-item">
+              <span class="summary-label">Statut:</span>
+              <span class="summary-value">{{ data.student.paymentRecord?.uniform?.isPaid ? 'Payé' : 'Non payé' }}</span>
+            </div>
+          </div>
+          
+          <div class="form-hint">
+            L'uniforme est un paiement unique effectué en début d'année scolaire.
+          </div>
+        </div>
+      </div>
+
+      <!-- Inscription Fee Payment Info -->
+<div class="form-section inscription-fee-info" *ngIf="data.component === 'inscriptionFee'">
+  <div class="section-header">
+    <h4 class="section-title">
+      <span class="section-icon">📋</span>
+      Informations Frais d'Inscription
+    </h4>
+  </div>
+  
+  <div class="inscription-fee-details" *ngIf="data.student.paymentRecord?.inscriptionFee">
+    <div class="inscription-fee-summary">
+      <div class="summary-item">
+        <span class="summary-label">Prix des frais d'inscription:</span>
+        <span class="summary-value">{{ formatCurrency(data.student.paymentRecord?.inscriptionFee?.price || 0) }}</span>
+      </div>
+      <div class="summary-item">
+        <span class="summary-label">Statut:</span>
+        <span class="summary-value">{{ data.student.paymentRecord?.inscriptionFee?.isPaid ? 'Payé' : 'Non payé' }}</span>
+      </div>
+    </div>
+    
+    <div class="form-hint">
+      Les frais d'inscription sont un paiement unique effectué au début de l'année scolaire.
+    </div>
+  </div>
+</div>
+
+      <!-- Payment Details Section -->
+      <div class="form-section payment-details">
+        <div class="section-header">
+          <h4 class="section-title">
+            <span class="section-icon">💳</span>
+            Détails du Paiement
+          </h4>
+        </div>
+        
+        <div class="form-grid">
+          <!-- Amount Input -->
+          <div class="form-group">
+            <label for="amount" class="form-label">
+              Montant à payer *
+              <span class="amount-hint" *ngIf="getMaxPayableAmount() > 0">
+                (Max: {{ formatCurrency(getMaxPayableAmount()) }})
+              </span>
+            </label>
+            <div class="input-group">
+              <span class="input-prefix">TND</span>
+              <input 
+                id="amount"
+                type="number" 
+                formControlName="amount" 
+                class="form-input"
+                min="0.01"
+                [max]="getMaxPayableAmount()"
+                step="0.01"
+                placeholder="0.00">
+              <button 
+                type="button" 
+                class="quick-fill-btn" 
+                *ngIf="getMaxPayableAmount() > 0"
+                (click)="fillMaxAmount()"
+                title="Remplir le montant maximum">
+                Max
+              </button>
+            </div>
+            <div class="form-error" *ngIf="isFieldInvalid('amount')">
+              {{ getFieldError('amount') }}
+            </div>
+          </div>
+
+          <!-- Payment Method -->
+          <div class="form-group">
+            <label for="paymentMethod" class="form-label">Mode de paiement *</label>
+            <div class="payment-method-selector">
+              <div class="method-options">
+                <div 
+                  *ngFor="let method of paymentMethods" 
+                  class="method-option"
+                  [class.selected]="paymentForm.get('paymentMethod')?.value === method.value"
+                  (click)="selectPaymentMethod(method.value)"
+                  [attr.aria-label]="getPaymentMethodAriaLabel(method)"
+                  tabindex="0">
+                  <span class="method-icon">{{ method.icon }}</span>
+                  <span class="method-label">{{ method.label }}</span>
+                </div>
+              </div>
+            </div>
+            <div class="form-error" *ngIf="isFieldInvalid('paymentMethod')">
+              {{ getFieldError('paymentMethod') }}
+            </div>
+          </div>
+
+          <!-- Payment Date -->
+          <div class="form-group">
+            <label for="paymentDate" class="form-label">Date de paiement *</label>
+            <div class="input-group">
+              <span class="input-prefix">📅</span>
+              <input 
+                id="paymentDate"
+                type="date" 
+                formControlName="paymentDate" 
+                class="form-input"
+                [max]="getMaxPaymentDate()">
+            </div>
+            <div class="form-error" *ngIf="isFieldInvalid('paymentDate')">
+              {{ getFieldError('paymentDate') }}
+            </div>
+          </div>
+
+          <!-- Receipt Number -->
+          <div class="form-group">
+            <label for="receiptNumber" class="form-label">
+              Numéro de reçu
+              <span class="optional-label">(optionnel)</span>
+            </label>
+            <div class="input-group">
+              <span class="input-prefix">🧾</span>
+              <input 
+                id="receiptNumber"
+                type="text" 
+                formControlName="receiptNumber" 
+                class="form-input"
+                placeholder="Ex: REC001"
+                maxlength="50">
+            </div>
+            <div class="form-hint">Numéro du reçu ou de la facture</div>
+          </div>
+        </div>
+
+        <!-- Discount for Annual Payment -->
+        <div class="form-group discount-section" *ngIf="data.type === 'annual' && data.component === 'tuition'">
+          <label for="discount" class="form-label">
+            Remise pour paiement annuel
+            <span class="optional-label">(optionnelle)</span>
+          </label>
+          <div class="input-group">
+            <span class="input-prefix">🏷️</span>
+            <input 
+              id="discount"
+              type="number" 
+              formControlName="discount" 
+              class="form-input"
+              min="0"
+              [max]="paymentForm.get('amount')?.value || 0"
+              step="0.01"
+              placeholder="0.00">
+            <span class="input-suffix">TND</span>
+          </div>
+          <div class="form-hint">Montant de la remise accordée pour le paiement annuel</div>
+          <div class="form-error" *ngIf="isFieldInvalid('discount')">
+            {{ getFieldError('discount') }}
+          </div>
+        </div>
+
+        <!-- Notes -->
+        <div class="form-group notes-section">
+          <label for="notes" class="form-label">
+            Notes
+            <span class="optional-label">(optionnelles)</span>
+          </label>
+          <textarea 
+            id="notes"
+            formControlName="notes" 
+            class="form-textarea"
+            rows="3"
+            maxlength="500"
+            placeholder="Ajouter des notes concernant ce paiement..."></textarea>
+          <div class="character-count">
+            {{ (paymentForm.get('notes')?.value || '').length }}/500 caractères
+          </div>
+        </div>
+      </div>
+
+      <!-- Payment Summary -->
+      <div class="payment-summary-section">
+        <div class="summary-header">
+          <h4 class="summary-title">
+            <span class="summary-icon">📊</span>
+            Récapitulatif du Paiement
+          </h4>
+        </div>
+        
+        <div class="summary-content">
+          <div class="summary-row">
+            <span class="summary-label">Montant saisi:</span>
+            <span class="summary-value">{{ formatCurrency(paymentForm.get('amount')?.value || 0) }}</span>
+          </div>
+          
+          <div class="summary-row" *ngIf="data.type === 'annual' && data.component === 'tuition' && (paymentForm.get('discount')?.value || 0) > 0">
+            <span class="summary-label">Remise:</span>
+            <span class="summary-value discount">-{{ formatCurrency(paymentForm.get('discount')?.value || 0) }}</span>
+          </div>
+          
+          <div class="summary-divider"></div>
+          
+          <div class="summary-row total">
+            <span class="summary-label">Total à payer:</span>
+            <span class="summary-value">{{ formatCurrency(calculateTotal()) }}</span>
+          </div>
+          
+          <div class="summary-row" *ngIf="data.student.paymentRecord">
+            <span class="summary-label">Nouveau solde ({{ getComponentLabel() }}):</span>
+            <span class="summary-value balance">{{ formatCurrency(calculateNewBalance()) }}</span>
+          </div>
+
+          <div class="summary-row" *ngIf="data.student.paymentRecord">
+            <span class="summary-label">Solde total restant:</span>
+            <span class="summary-value balance-total">{{ formatCurrency(calculateNewTotalBalance()) }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Validation Messages -->
+      <div class="validation-messages" *ngIf="getValidationMessages().length > 0">
+        <div class="validation-header">
+          <span class="validation-icon">⚠️</span>
+          <span class="validation-title">Vérifications requises</span>
+        </div>
+        <ul class="validation-list">
+          <li *ngFor="let message of getValidationMessages()" class="validation-item">
+            {{ message }}
+          </li>
+        </ul>
+      </div>
+    </form>
+  </div>
+
+  <!-- Dialog Actions -->
+  <div class="dialog-actions">
+    <button 
+      type="button"
+      class="btn btn-secondary" 
+      (click)="onCancel()" 
+      [disabled]="isLoading">
+      <span class="btn-icon">❌</span>
+      Annuler
+    </button>
+    
+    <button 
+      type="button"
+      class="btn btn-primary" 
+      (click)="onSubmit()" 
+      [disabled]="!canSubmit() || isLoading">
+      <span class="btn-spinner" *ngIf="isLoading">⏳</span>
+      <span class="btn-icon" *ngIf="!isLoading">💾</span>
+      <span *ngIf="!isLoading">{{ getSubmitButtonText() }}</span>
+      <span *ngIf="isLoading">Enregistrement...</span>
+    </button>
+  </div>
+
+  <!-- Loading Overlay -->
+  <div class="loading-overlay" *ngIf="isLoading">
+    <div class="loading-content">
+      <div class="loading-spinner"></div>
+      <p class="loading-text">Enregistrement du paiement...</p>
+    </div>
+  </div>
+</div>

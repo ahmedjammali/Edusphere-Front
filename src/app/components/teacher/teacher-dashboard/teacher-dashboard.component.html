@@ -1,0 +1,73 @@
+<!-- teacher-dashboard.component.html -->
+<app-teacher-layout [(activeSection)]="activeSection" *ngIf="!isLoading">
+  <!-- Section Aperçu -->
+  <app-dashboard-overview 
+    *ngIf="activeSection === 'overview'"
+    [stats]="dashboardStats"
+    (createExercise)="openCreateExerciseModal()"
+    (enterGrades)="setActiveSection('grades')"
+    (viewProgress)="setActiveSection('progress')">
+  </app-dashboard-overview>
+
+  <!-- Section Matières -->
+  <app-teacher-subjects
+    *ngIf="activeSection === 'subjects'"
+    [subjects]="teachingSubjects"
+    [subjectStats]="subjectStatsMap"
+    (subjectSelected)="onSubjectSelected($event)"
+    (viewDetails)="onViewSubjectDetails($event)">
+  </app-teacher-subjects>
+
+  <!-- Section Exercices -->
+  <app-teacher-exercises
+    *ngIf="activeSection === 'exercises'"
+    [exercises]="allExercises"
+    [subjects]="teachingSubjects"
+    [classes]="myClasses"
+    (exerciseCreated)="onExerciseCreated($event)"
+    (exerciseUpdated)="onExerciseUpdated($event)"
+    (exerciseDeleted)="onExerciseDeleted($event)"
+    (refreshExercises)="loadTeacherData()">
+  </app-teacher-exercises>
+
+  <!-- Section Classes -->
+  <app-teacher-classes
+    *ngIf="activeSection === 'classes'"
+    [classes]="myClasses"
+    [classSubjectsMapping]="classSubjectsMapping">
+  </app-teacher-classes>
+
+  <!-- Section Emploi du Temps -->
+  <app-teacher-schedule
+    *ngIf="activeSection === 'schedule'"
+    [currentUser]="currentUser">
+  </app-teacher-schedule>
+
+  <!-- Section Notes -->
+  <app-teacher-grades
+    *ngIf="activeSection === 'grades'"
+    [classes]="myClasses"
+    [teachingSubjects]="teachingSubjects">
+  </app-teacher-grades>
+
+  <!-- Section Progrès -->
+  <app-student-progress 
+    *ngIf="activeSection === 'progress'" 
+    [myClasses]="myClasses"
+    [teachingSubjects]="teachingSubjects" 
+    [allExercises]="allExercises">
+  </app-student-progress>
+
+  <!-- Section Notifications -->
+  <app-teacher-notifications
+    *ngIf="activeSection === 'notifications'"
+    [teacherClasses]="myClasses"
+    [teachingSubjects]="teachingSubjects">
+  </app-teacher-notifications>
+</app-teacher-layout>
+
+<!-- État de chargement -->
+<div class="loading-container" *ngIf="isLoading">
+  <div class="spinner"></div>
+  <p>Chargement du tableau de bord...</p>
+</div>

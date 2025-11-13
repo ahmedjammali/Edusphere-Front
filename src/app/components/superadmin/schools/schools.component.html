@@ -1,0 +1,482 @@
+<app-layout>
+
+<!-- school-management.component.html -->
+<div class="school-container">
+  <!-- Header Section -->
+  <div class="page-header">
+    <div class="header-content">
+      <h1>Gestion de l'École</h1>
+      <p class="header-subtitle">Gérer les paramètres et l'accès de l'établissement</p>
+    </div>
+  </div>
+
+  <!-- No School State - Create School Card -->
+  <div class="create-school-card" *ngIf="!schoolInfo && !isLoading">
+    <div class="empty-state">
+      <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="empty-icon">
+        <path d="M3 21h18"/>
+        <path d="M5 21V7l8-4v18"/>
+        <path d="M19 21V11l-6-4"/>
+      </svg>
+      <h2>Aucune École Configurée</h2>
+      <p>Créez une nouvelle école avec son administrateur pour commencer.</p>
+      
+      <button class="btn-primary" (click)="openCreateSchoolModal()">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="12" y1="5" x2="12" y2="19"/>
+          <line x1="5" y1="12" x2="19" y2="12"/>
+        </svg>
+        Créer une École
+      </button>
+    </div>
+  </div>
+
+  <!-- School Info Card - Only show if school exists -->
+  <div class="school-card" *ngIf="schoolInfo">
+    <div class="card-header">
+      <h2>Informations de l'École</h2>
+      <div class="status-badge" [class.active]="schoolInfo.isActive" [class.blocked]="!schoolInfo.isActive">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="10"/>
+          <path *ngIf="schoolInfo.isActive" d="M9 12l2 2 4-4"/>
+          <path *ngIf="!schoolInfo.isActive" d="M15 9l-6 6M9 9l6 6"/>
+        </svg>
+        {{ schoolInfo.isActive ? 'Active' : 'Bloquée' }}
+      </div>
+    </div>
+
+    <div class="school-details">
+      <div class="detail-row">
+        <label>Nom de l'école:</label>
+        <div class="school-name-container">
+          <span>{{ schoolInfo.name }}</span>
+          <button class="edit-name-btn" (click)="openEditNameModal()" title="Modifier le nom de l'école">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+              <path d="m18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+      
+     
+      
+      <div class="detail-row" *ngIf="!schoolInfo.isActive && schoolInfo.blockedReason">
+        <label>Raison du blocage:</label>
+        <span class="blocked-reason">{{ schoolInfo.blockedReason }}</span>
+      </div>
+    </div>
+
+    <div class="school-actions">
+      <button 
+        class="btn-danger" 
+        *ngIf="schoolInfo.isActive"
+        (click)="openBlockModal()"
+      >
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+          <path d="M5 11V7a7 7 0 0114 0v4"/>
+        </svg>
+        Bloquer l'Accès
+      </button>
+      
+      <button 
+        class="btn-success" 
+        *ngIf="!schoolInfo.isActive"
+        (click)="confirmUnblockSchool()"
+      >
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+          <path d="M7 11V7a5 5 0 0110 0v4"/>
+        </svg>
+        Débloquer l'Accès
+      </button>
+    </div>
+  </div>
+
+  <!-- Admin Management Section -->
+  <div class="admin-management-card" *ngIf="schoolInfo">
+    <div class="card-header">
+      <h2>Gestion des Administrateurs</h2>
+      <button class="btn-primary" (click)="openCreateAdminModal()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="12" y1="5" x2="12" y2="19"/>
+          <line x1="5" y1="12" x2="19" y2="12"/>
+        </svg>
+        Ajouter Admin
+      </button>
+    </div>
+
+    <div class="admin-list" *ngIf="adminsList && adminsList.length > 0; else noAdmins">
+      <div class="admin-item" *ngFor="let admin of adminsList">
+        <div class="admin-info">
+          <div class="admin-name">{{ admin.name }}</div>
+          <div class="admin-email">{{ admin.email }}</div>
+          <div class="admin-meta">Créé le {{ formatDate(admin.createdAt) }}</div>
+        </div>
+        <div class="admin-actions">
+          <button class="btn-secondary btn-sm" (click)="openEditAdminModal(admin)">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+              <path d="m18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+            </svg>
+            Modifier
+          </button>
+          <button class="btn-danger btn-sm" (click)="confirmDeleteAdmin(admin)">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="3,6 5,6 21,6"/>
+              <path d="m19,6v14a2,2 0 0,1-2,2H7a2,2 0 0,1-2-2V6m3,0V4a2,2 0 0,1 2-2h4a2,2 0 0,1 2,2v2"/>
+            </svg>
+            Supprimer
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <ng-template #noAdmins>
+      <div class="empty-state-small">
+        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="empty-icon">
+          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+          <circle cx="12" cy="7" r="4"/>
+        </svg>
+        <p>Aucun administrateur supplémentaire</p>
+      </div>
+    </ng-template>
+  </div>
+
+  <!-- Loading State -->
+  <div class="loading-state" *ngIf="isLoading">
+    <div class="spinner"></div>
+    <p>Chargement des informations...</p>
+  </div>
+</div>
+
+<!-- Create School Modal -->
+<div class="modal-overlay" *ngIf="showCreateSchoolModal" (click)="closeCreateSchoolModal()">
+  <div class="modal-content large-modal" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h2>Créer une Nouvelle École</h2>
+      <button class="close-btn" (click)="closeCreateSchoolModal()">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="18" y1="6" x2="6" y2="18"/>
+          <line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </button>
+    </div>
+
+    <div class="modal-body">
+      <form [formGroup]="createSchoolForm" (ngSubmit)="createSchool()">
+        <div class="form-section">
+          <h3>Informations de l'École</h3>
+          
+          <div class="form-group">
+            <label>Nom de l'école <span class="required">*</span></label>
+            <input 
+              type="text"
+              formControlName="schoolName" 
+              placeholder="Entrez le nom de l'école..."
+              [class.error]="isFieldInvalid('schoolName', 'create')"
+            />
+            <span class="error-message" *ngIf="isFieldInvalid('schoolName', 'create')">
+              Le nom de l'école est requis
+            </span>
+          </div>
+        </div>
+
+        <div class="form-section">
+          <h3>Administrateur de l'École</h3>
+          
+          <div class="form-group">
+            <label>Nom complet <span class="required">*</span></label>
+            <input 
+              type="text"
+              formControlName="adminName" 
+              placeholder="Nom complet de l'administrateur..."
+              [class.error]="isFieldInvalid('adminName', 'create')"
+            />
+            <span class="error-message" *ngIf="isFieldInvalid('adminName', 'create')">
+              Le nom de l'administrateur est requis
+            </span>
+          </div>
+
+          <div class="form-group">
+            <label>Email <span class="required">*</span></label>
+            <input 
+              type="email"
+              formControlName="adminEmail" 
+              placeholder="email@exemple.com"
+              [class.error]="isFieldInvalid('adminEmail', 'create')"
+            />
+            <span class="error-message" *ngIf="isFieldInvalid('adminEmail', 'create')">
+              <span *ngIf="createSchoolForm.get('adminEmail')?.errors?.['required']">L'email est requis</span>
+              <span *ngIf="createSchoolForm.get('adminEmail')?.errors?.['email']">Format d'email invalide</span>
+            </span>
+          </div>
+
+          <div class="form-group">
+            <label>Mot de passe <span class="required">*</span></label>
+            <input 
+              type="password"
+              formControlName="adminPassword" 
+              placeholder="Mot de passe sécurisé..."
+              [class.error]="isFieldInvalid('adminPassword', 'create')"
+            />
+            <span class="error-message" *ngIf="isFieldInvalid('adminPassword', 'create')">
+              Le mot de passe est requis (minimum 6 caractères)
+            </span>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn-secondary" (click)="closeCreateSchoolModal()">Annuler</button>
+          <button type="submit" class="btn-primary" [disabled]="createSchoolForm.invalid || isCreatingSchool">
+            <span *ngIf="!isCreatingSchool">Créer l'École</span>
+            <span *ngIf="isCreatingSchool" class="saving">
+              <span class="spinner-small"></span>
+              Création en cours...
+            </span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Create/Edit Admin Modal -->
+<div class="modal-overlay" *ngIf="showCreateAdminModal || showEditAdminModal" (click)="closeAdminModal()">
+  <div class="modal-content" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h2>{{ showEditAdminModal ? 'Modifier l\'Administrateur' : 'Créer un Administrateur' }}</h2>
+      <button class="close-btn" (click)="closeAdminModal()">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="18" y1="6" x2="6" y2="18"/>
+          <line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </button>
+    </div>
+
+    <div class="modal-body">
+      <form [formGroup]="adminForm" (ngSubmit)="showEditAdminModal ? updateAdmin() : createAdmin()">
+        <div class="form-group">
+          <label>Nom complet <span class="required">*</span></label>
+          <input 
+            type="text"
+            formControlName="name" 
+            placeholder="Nom complet de l'administrateur..."
+            [class.error]="isFieldInvalid('name', 'admin')"
+          />
+          <span class="error-message" *ngIf="isFieldInvalid('name', 'admin')">
+            Le nom est requis
+          </span>
+        </div>
+
+        <div class="form-group">
+          <label>Email <span class="required">*</span></label>
+          <input 
+            type="email"
+            formControlName="email" 
+            placeholder="email@exemple.com"
+            [class.error]="isFieldInvalid('email', 'admin')"
+          />
+          <span class="error-message" *ngIf="isFieldInvalid('email', 'admin')">
+            <span *ngIf="adminForm.get('email')?.errors?.['required']">L'email est requis</span>
+            <span *ngIf="adminForm.get('email')?.errors?.['email']">Format d'email invalide</span>
+          </span>
+        </div>
+
+        <div class="form-group" *ngIf="!showEditAdminModal">
+          <label>Mot de passe <span class="required">*</span></label>
+          <input 
+            type="password"
+            formControlName="password" 
+            placeholder="Mot de passe sécurisé..."
+            [class.error]="isFieldInvalid('password', 'admin')"
+          />
+          <span class="error-message" *ngIf="isFieldInvalid('password', 'admin')">
+            Le mot de passe est requis (minimum 6 caractères)
+          </span>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn-secondary" (click)="closeAdminModal()">Annuler</button>
+          <button type="submit" class="btn-primary" [disabled]="adminForm.invalid || isSubmitting">
+            <span *ngIf="!isSubmitting">{{ showEditAdminModal ? 'Modifier' : 'Créer' }}</span>
+            <span *ngIf="isSubmitting" class="saving">
+              <span class="spinner-small"></span>
+              {{ showEditAdminModal ? 'Modification...' : 'Création...' }}
+            </span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Edit School Name Modal -->
+<div class="modal-overlay" *ngIf="showEditNameModal" (click)="closeEditNameModal()">
+  <div class="modal-content" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h2>Modifier le Nom de l'École</h2>
+      <button class="close-btn" (click)="closeEditNameModal()">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="18" y1="6" x2="6" y2="18"/>
+          <line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </button>
+    </div>
+
+    <div class="modal-body">
+      <form [formGroup]="editNameForm" (ngSubmit)="updateSchoolName()">
+        <div class="form-group">
+          <label>Nouveau nom de l'école <span class="required">*</span></label>
+          <input 
+            type="text"
+            formControlName="name" 
+            placeholder="Entrez le nouveau nom de l'école..."
+            [class.error]="isFieldInvalid('name', 'editName')"
+            maxlength="100"
+          />
+          <span class="error-message" *ngIf="isFieldInvalid('name', 'editName')">
+            <span *ngIf="editNameForm.get('name')?.errors?.['required']">Le nom de l'école est requis</span>
+            <span *ngIf="editNameForm.get('name')?.errors?.['minlength']">Le nom doit contenir au moins 2 caractères</span>
+            <span *ngIf="editNameForm.get('name')?.errors?.['maxlength']">Le nom ne peut pas dépasser 100 caractères</span>
+          </span>
+          <small class="form-hint">Maximum 100 caractères</small>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn-secondary" (click)="closeEditNameModal()">Annuler</button>
+          <button type="submit" class="btn-primary" [disabled]="editNameForm.invalid || isUpdatingName">
+            <span *ngIf="!isUpdatingName">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M20 6L9 17l-5-5"/>
+              </svg>
+              Enregistrer
+            </span>
+            <span *ngIf="isUpdatingName" class="saving">
+              <span class="spinner-small"></span>
+              Mise à jour...
+            </span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Block School Modal -->
+<div class="modal-overlay" *ngIf="showBlockModal" (click)="closeBlockModal()">
+  <div class="modal-content" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h2>Bloquer l'Accès à l'École</h2>
+      <button class="close-btn" (click)="closeBlockModal()">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="18" y1="6" x2="6" y2="18"/>
+          <line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </button>
+    </div>
+
+    <div class="modal-body">
+      <div class="warning-message">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+          <line x1="12" y1="9" x2="12" y2="13"/>
+          <line x1="12" y1="17" x2="12.01" y2="17"/>
+        </svg>
+        <p>
+          <strong>Attention!</strong> Cette action bloquera l'accès à tous les utilisateurs de l'école 
+          (administrateur, enseignants et étudiants).
+        </p>
+      </div>
+
+      <form [formGroup]="blockForm" (ngSubmit)="confirmBlockSchool()">
+        <div class="form-group">
+          <label>Raison du blocage <span class="required">*</span></label>
+          <textarea 
+            formControlName="reason" 
+            placeholder="Expliquez la raison du blocage..."
+            rows="4"
+            [class.error]="isFieldInvalid('reason', 'block')"
+          ></textarea>
+          <span class="error-message" *ngIf="isFieldInvalid('reason', 'block')">
+            La raison est requise (minimum 10 caractères)
+          </span>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn-secondary" (click)="closeBlockModal()">Annuler</button>
+          <button type="submit" class="btn-danger" [disabled]="blockForm.invalid || isBlocking">
+            <span *ngIf="!isBlocking">Continuer</span>
+            <span *ngIf="isBlocking" class="saving">
+              <span class="spinner-small"></span>
+              Blocage en cours...
+            </span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Confirmation Modal -->
+<div class="modal-overlay confirmation-modal" *ngIf="showConfirmationModal" (click)="closeConfirmationModal()">
+  <div class="modal-content confirmation-content" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h2>{{ confirmationModalData?.title }}</h2>
+      <button class="close-btn" (click)="closeConfirmationModal()">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="18" y1="6" x2="6" y2="18"/>
+          <line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </button>
+    </div>
+
+    <div class="modal-body">
+      <div class="confirmation-icon" [ngClass]="confirmationModalData?.type">
+        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" *ngIf="confirmationModalData?.type === 'danger'">
+          <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+          <line x1="12" y1="9" x2="12" y2="13"/>
+          <line x1="12" y1="17" x2="12.01" y2="17"/>
+        </svg>
+        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" *ngIf="confirmationModalData?.type === 'warning'">
+          <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+          <line x1="12" y1="9" x2="12" y2="13"/>
+          <line x1="12" y1="17" x2="12.01" y2="17"/>
+        </svg>
+        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" *ngIf="confirmationModalData?.type === 'info'">
+          <circle cx="12" cy="12" r="10"/>
+          <path d="M12 16v-4"/>
+          <path d="M12 8h.01"/>
+        </svg>
+      </div>
+      
+      <div class="confirmation-message">
+        <p>{{ confirmationModalData?.message }}</p>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn-secondary" (click)="closeConfirmationModal()">
+          {{ confirmationModalData?.cancelText }}
+        </button>
+        <button 
+          type="button" 
+          class="btn-primary"
+          [ngClass]="{
+            'btn-danger': confirmationModalData?.type === 'danger',
+            'btn-warning': confirmationModalData?.type === 'warning',
+            'btn-info': confirmationModalData?.type === 'info'
+          }"
+          (click)="confirmAction()"
+        >
+          {{ confirmationModalData?.confirmText }}
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Toaster Component -->
+<app-toaster></app-toaster>
+
+</app-layout>

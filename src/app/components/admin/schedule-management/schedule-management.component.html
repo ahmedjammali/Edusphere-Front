@@ -1,0 +1,884 @@
+<!-- schedule-management.component.html (French) -->
+
+<div class="schedule-management-container">
+  <!-- Section d'en-tête -->
+  <div class="header-section">
+    <div class="page-title">
+      <h1>Gestion des Emplois du Temps</h1>
+      <p>Créer et gérer les emplois du temps des enseignants</p>
+    </div>
+    
+    <div class="action-buttons">
+      <button 
+        class="btn btn-secondary" 
+        (click)="resetSelection()"
+        *ngIf="selectedTeacher">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="m15 18-6-6 6-6"/>
+        </svg>
+        Retour aux Enseignants
+      </button>
+      
+      <button
+        class="btn btn-primary"
+        [class.btn-warning]="hasUnsavedChanges"
+        (click)="saveSchedule()"
+        [disabled]="!selectedTeacher || sessions.length === 0"
+        *ngIf="selectedTeacher">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
+          <polyline points="17,21 17,13 7,13 7,21"/>
+          <polyline points="7,3 7,8 15,8"/>
+        </svg>
+        <span *ngIf="!hasUnsavedChanges">Sauvegarder l'Emploi du Temps</span>
+        <span *ngIf="hasUnsavedChanges">⚠️ Modifications Non Sauvegardées</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Phase de sélection d'enseignant -->
+  <div class="teacher-selection-phase" *ngIf="!selectedTeacher">
+    <div class="selection-card">
+      <div class="card-header">
+        <h2>Sélectionner un Enseignant</h2>
+        <p>Choisissez un enseignant pour créer son emploi du temps</p>
+      </div>
+      
+      <div class="search-section">
+        <div class="search-input-wrapper">
+          <input 
+            type="text" 
+            class="search-input"
+            placeholder="Rechercher des enseignants..."
+            [(ngModel)]="teacherSearchQuery"
+            (ngModelChange)="filterTeachers()">
+          <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="11" cy="11" r="8"/>
+            <path d="m21 21-4.35-4.35"/>
+          </svg>
+        </div>
+        
+        <div class="filter-controls">
+          <select 
+            class="filter-select"
+            [(ngModel)]="selectedSubjectFilter"
+            (ngModelChange)="filterTeachers()">
+            <option value="">Toutes les Matières</option>
+            <option *ngFor="let subject of allSubjects" [value]="subject._id">
+              {{subject.name || 'Matière Sans Nom'}}
+            </option>
+          </select>
+        </div>
+      </div>
+      
+      <div class="teachers-grid">
+        <div 
+          class="teacher-card"
+          *ngFor="let teacher of filteredTeachers; trackBy: trackByTeacherId"
+          (click)="selectTeacher(teacher)"
+          [class.selected]="isTeacherSelected(teacher)">
+          
+          <div class="teacher-avatar">
+            <div class="avatar-circle">
+              {{getInitials(teacher.name)}}
+            </div>
+          </div>
+          
+          <div class="teacher-info">
+            <h3>{{teacher.name}}</h3>
+            <p class="teacher-email">{{teacher.email}}</p>
+            
+            <div class="teacher-subjects">
+              <span class="subject-count">
+                {{getTeacherSubjectCount(teacher)}} matières
+              </span>
+              <div class="subjects-list" *ngIf="getTeacherSubjects(teacher).length > 0; else noSubjects">
+                <span 
+                  class="subject-chip"
+                  *ngFor="let subject of getTeacherSubjects(teacher).slice(0, 3)">
+                  {{subject.name || 'Matière Sans Nom'}}
+                </span>
+                <span 
+                  class="subject-chip more-subjects"
+                  *ngIf="getTeacherSubjects(teacher).length > 3">
+                  +{{getTeacherSubjects(teacher).length - 3}}
+                </span>
+              </div>
+              <ng-template #noSubjects>
+                <div class="no-subjects">Aucune matière assignée</div>
+              </ng-template>
+            </div>
+            
+            <div class="teacher-classes">
+              <span class="classes-count">
+                {{getTeacherClassCount(teacher)}} classes
+              </span>
+            </div>
+          </div>
+          
+          <div class="selection-indicator">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="20 6 9 17 4 12"/>
+            </svg>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Phase de création d'emploi du temps -->
+  <div class="schedule-creation-phase" *ngIf="selectedTeacher">
+    <!-- En-tête de l'enseignant -->
+    <div class="selected-teacher-header">
+      <div class="teacher-summary">
+        <div class="teacher-avatar-large">
+          <div class="avatar-circle">
+            {{getInitials(selectedTeacher.name)}}
+          </div>
+        </div>
+        
+        <div class="teacher-details">
+          <h2>{{selectedTeacher.name}}</h2>
+          <p>{{selectedTeacher.email}}</p>
+          <div class="teacher-meta">
+            <span class="meta-item">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/>
+                <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>
+              </svg>
+              {{getTeacherSubjectCount(selectedTeacher)}} matières
+            </span>
+            <span class="meta-item">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                <circle cx="9" cy="7" r="4"/>
+                <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+                <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+              </svg>
+              {{getTeacherClassCount(selectedTeacher)}} classes
+            </span>
+          </div>
+        </div>
+      </div>
+      
+      <div class="schedule-info">
+        <div class="info-card">
+          <span class="info-label">Sessions Créées</span>
+          <span class="session-count">{{sessions.length}}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Grille d'emploi du temps -->
+    <div class="timetable-container">
+      <div class="timetable-header">
+        <h3>Emploi du Temps Hebdomadaire</h3>
+        <div class="timetable-controls">
+          <button 
+            class="btn btn-outline"
+            (click)="openClearAllModal()"
+            [disabled]="sessions.length === 0">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="3 6 5 6 21 6"/>
+              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+            </svg>
+            Effacer Tout
+          </button>
+          
+          <button
+            class="btn btn-secondary pdf-download-btn"
+            *ngIf="selectedTeacher && sessions.length > 0"
+            (click)="downloadSchedulePDF()"
+            title="Télécharger l'emploi du temps en PDF">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+              <polyline points="14 2 14 8 20 8"/>
+              <line x1="16" y1="13" x2="8" y2="13"/>
+              <line x1="16" y1="17" x2="8" y2="17"/>
+              <polyline points="10 9 9 9 8 9"/>
+            </svg>
+            Télécharger PDF
+          </button>
+        </div>
+      </div>
+
+      <!-- Mobile Schedule View -->
+      <div class="mobile-schedule-view">
+        <!-- Day Selector -->
+        <div class="mobile-day-selector">
+          <button
+            *ngFor="let day of workDays"
+            class="mobile-day-btn"
+            [class.active]="selectedMobileDay === day"
+            (click)="selectMobileDay(day)">
+            {{getDayDisplayName(day)}}
+          </button>
+        </div>
+
+        <!-- Mobile Day Content -->
+        <div *ngFor="let day of workDays" class="mobile-day-content" [class.active]="selectedMobileDay === day">
+          <div *ngFor="let time of timeSlots" class="mobile-time-slot" [class.has-session]="hasSessionAtTime(day, time)">
+            <div class="mobile-time-header">
+              <span class="mobile-time-label">{{time}}</span>
+              <button class="mobile-add-btn" (click)="selectTimeSlot(day, time)" *ngIf="!hasSessionAtTime(day, time)">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <line x1="12" y1="5" x2="12" y2="19"/>
+                  <line x1="5" y1="12" x2="19" y2="12"/>
+                </svg>
+              </button>
+            </div>
+
+            <div class="mobile-session-list" *ngIf="getSessionsAtTime(day, time) as sessionsAtTime">
+              <ng-container *ngIf="sessionsAtTime.length > 0; else emptySlot">
+                <div *ngFor="let session of sessionsAtTime; let i = index">
+                  <div class="mobile-session-divider" *ngIf="i > 0"></div>
+                  <div class="mobile-session-card" (click)="editSession(session, $event)">
+                    <div class="session-header">
+                      <div class="subject-name">{{getCleanSubjectName(session)}}</div>
+                      <span class="week-badge week-{{session.weekType}}" *ngIf="session.weekType !== 'both'">
+                        {{session.weekType}}
+                      </span>
+                    </div>
+                    <div class="teacher-name" *ngIf="session.className">
+                      🎓 {{session.className}}
+                    </div>
+                    <div class="room-name" *ngIf="session.room">
+                      📍 {{session.room}}
+                    </div>
+                    <div class="session-actions-mobile">
+                      <button class="edit-btn-mobile" (click)="editSession(session, $event)">
+                        ✏️
+                      </button>
+                      <button class="delete-btn-mobile" (click)="openDeleteSessionModal(session, $event)">
+                        🗑️
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </ng-container>
+              <ng-template #emptySlot>
+                <div class="mobile-empty-slot" (click)="selectTimeSlot(day, time)">
+                  Appuyez pour ajouter un cours
+                </div>
+              </ng-template>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Desktop Schedule Grid -->
+      <div class="timetable-grid">
+        <!-- En-tête des heures -->
+        <div class="time-header">
+          <div class="corner-cell">Heure</div>
+          <div
+            class="time-slot"
+            *ngFor="let time of timeSlots">
+            {{time}}
+          </div>
+        </div>
+
+        <!-- Jours et Sessions -->
+        <div class="days-container">
+          <div
+            class="day-row"
+            *ngFor="let day of workDays">
+
+            <div class="day-header">
+              <span class="day-name">{{getDayDisplayName(day)}}</span>
+              <span class="day-sessions-count">{{getDaySessions(day).length}} sessions</span>
+            </div>
+
+            <!-- Inside the time-cells div, replace the time-cell content -->
+<div class="time-cells">
+  <div
+    class="time-cell"
+    *ngFor="let time of timeSlots"
+    [class.has-session]="hasSessionAtTime(day, time)"
+    [class.has-multiple-sessions]="hasMultipleSessionsAtTime(day, time)"
+    [class.selected-cell]="isSelectedCell(day, time)"
+    (click)="selectTimeSlot(day, time)">
+
+    <!-- Get all sessions at this time -->
+    <ng-container *ngIf="getSessionsAtTime(day, time) as sessionsAtTime">
+      <div class="sessions-container" *ngIf="sessionsAtTime.length > 0">
+
+        <!-- Single session or both weeks -->
+        <div
+          class="session-card single"
+          *ngIf="sessionsAtTime.length === 1"
+          [class.week-a]="sessionsAtTime[0].weekType === 'A'"
+          [class.week-b]="sessionsAtTime[0].weekType === 'B'"
+          [class.week-both]="sessionsAtTime[0].weekType === 'both'"
+          (click)="editSession(sessionsAtTime[0], $event)">
+
+          <div class="session-content">
+            <div class="session-header">
+              <div class="subject-name">{{getSessionSubjectName(sessionsAtTime[0])}}</div>
+              <div class="week-badge" *ngIf="sessionsAtTime[0].weekType !== 'both'">
+                {{sessionsAtTime[0].weekType}}
+              </div>
+            </div>
+
+            <div class="session-info">
+              <span class="class-name">{{sessionsAtTime[0].className}}</span>
+              <span class="room-name" *ngIf="sessionsAtTime[0].room">{{sessionsAtTime[0].room}}</span>
+            </div>
+          </div>
+
+          <div class="session-actions">
+            <button
+              class="action-btn edit"
+              (click)="editSession(sessionsAtTime[0], $event)"
+              title="Modifier">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+              </svg>
+            </button>
+            <button
+              class="action-btn delete"
+              (click)="openDeleteSessionModal(sessionsAtTime[0], $event)"
+              title="Supprimer">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="3 6 5 6 21 6"/>
+                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <!-- Multiple sessions (Week A and B) -->
+        <div class="dual-session-container" *ngIf="sessionsAtTime.length > 1">
+          <div
+            class="session-card compact"
+            *ngFor="let session of sessionsAtTime"
+            [class.week-a]="session.weekType === 'A'"
+            [class.week-b]="session.weekType === 'B'"
+            (click)="editSession(session, $event)">
+
+            <div class="session-content">
+              <div class="week-indicator">{{session.weekType}}</div>
+              <div class="subject-name compact">{{getSessionSubjectName(session)}}</div>
+              <div class="class-info compact">{{session.className}}</div>
+              <div class="room-info compact" *ngIf="session.room">{{session.room}}</div>
+            </div>
+
+            <div class="session-actions compact">
+              <button
+                class="action-btn mini edit"
+                (click)="editSession(session, $event)"
+                title="Modifier">
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                  <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                </svg>
+              </button>
+              <button
+                class="action-btn mini delete"
+                (click)="openDeleteSessionModal(session, $event)"
+                title="Supprimer">
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <line x1="18" y1="6" x2="6" y2="18"/>
+                  <line x1="6" y1="6" x2="18" y2="18"/>
+                </svg>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </ng-container>
+
+    <!-- Empty cell indicator -->
+    <div
+      class="empty-cell-indicator"
+      *ngIf="!hasSessionAtTime(day, time)">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <line x1="12" y1="5" x2="12" y2="19"/>
+        <line x1="5" y1="12" x2="19" y2="12"/>
+      </svg>
+      <span>Ajouter Session</span>
+    </div>
+  </div>
+</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal de Création/Modification de Session -->
+  <div 
+    class="modal-overlay"
+    *ngIf="showSessionModal"
+    (click)="closeSessionModal()">
+    
+    <div 
+      class="session-modal"
+      (click)="$event.stopPropagation()">
+      
+      <div class="modal-header">
+        <h3>{{editingSession ? 'Modifier la Session' : 'Créer une Session'}}</h3>
+        <button class="close-btn" (click)="closeSessionModal()">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="18" y1="6" x2="6" y2="18"/>
+            <line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+        </button>
+      </div>
+      
+      <div class="modal-content">
+        <form class="session-form" (ngSubmit)="saveSession()">
+          <!-- Date et Heure -->
+          <div class="form-row">
+            <div class="form-group">
+              <label>Date</label>
+              <input 
+                type="date" 
+                class="form-input"
+                [(ngModel)]="sessionForm.sessionDate"
+                name="sessionDate"
+                required>
+            </div>
+            
+            <div class="form-group">
+              <label>Heure de Début</label>
+              <input 
+                type="time" 
+                class="form-input"
+                [(ngModel)]="sessionForm.startTime"
+                name="startTime"
+                required>
+            </div>
+            
+            <div class="form-group">
+              <label>Heure de Fin</label>
+              <input 
+                type="time" 
+                class="form-input"
+                [(ngModel)]="sessionForm.endTime"
+                name="endTime"
+                required>
+            </div>
+          </div>
+          
+          <!-- Type de Session d'abord -->
+          <div class="form-group full-width">
+            <label>Type d'Horaire</label>
+            <div class="radio-group">
+              <label class="radio-option">
+                <input
+                  type="radio"
+                  name="scheduleType"
+                  value="every_week"
+                  [(ngModel)]="sessionForm.scheduleType"
+                  (ngModelChange)="onScheduleTypeChange()">
+                <span class="radio-label">
+                  <span class="radio-title">Chaque Semaine</span>
+                  <span class="radio-description">Même cours chaque semaine</span>
+                </span>
+              </label>
+
+              <label class="radio-option">
+                <input
+                  type="radio"
+                  name="scheduleType"
+                  value="alternating"
+                  [(ngModel)]="sessionForm.scheduleType"
+                  (ngModelChange)="onScheduleTypeChange()">
+                <span class="radio-label">
+                  <span class="radio-title">Alternance (Par 15)</span>
+                  <span class="radio-description">Différents cours selon Semaine A ou B</span>
+                </span>
+              </label>
+            </div>
+          </div>
+
+          <!-- Configuration pour "Chaque Semaine" -->
+          <div class="schedule-config every-week" *ngIf="sessionForm.scheduleType === 'every_week'">
+            <h4>Configuration du Cours</h4>
+            <div class="form-row">
+              <div class="form-group">
+                <label>Matière</label>
+                <select
+                  class="form-select"
+                  [(ngModel)]="sessionForm.subjectId"
+                  name="subjectId"
+                  (ngModelChange)="onSubjectChange()"
+                  required>
+                  <option value="">Sélectionner une Matière</option>
+                  <option
+                    *ngFor="let subject of getTeacherSubjects(selectedTeacher!)"
+                    [value]="subject._id">
+                    {{subject.name || 'Matière Sans Nom'}}
+                  </option>
+                </select>
+                <div class="error-hint" *ngIf="getTeacherSubjects(selectedTeacher!).length === 0">
+                  Aucune matière trouvée pour cet enseignant.
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label>Classe</label>
+                <select
+                  class="form-select"
+                  [(ngModel)]="sessionForm.classId"
+                  name="classId"
+                  (ngModelChange)="onClassChange()"
+                  required
+                  [disabled]="!sessionForm.subjectId || availableClasses.length === 0">
+                  <option value="">Sélectionner une Classe</option>
+                  <option
+                    *ngFor="let cls of availableClasses"
+                    [value]="cls._id">
+                    {{getClassDisplayName(cls)}}
+                  </option>
+                </select>
+                <div class="form-hint">{{getAvailableClassesInfo()}}</div>
+                <div class="error-hint" *ngIf="sessionForm.subjectId && availableClasses.length === 0">
+                  L'enseignant n'enseigne pas cette matière dans aucune classe.
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Configuration pour "Alternance" -->
+          <div class="schedule-config alternating" *ngIf="sessionForm.scheduleType === 'alternating'">
+            <h4>Configuration Alternée</h4>
+
+            <!-- Configuration Semaine A -->
+            <div class="week-config week-a">
+              <div class="week-header">
+                <div class="week-indicator">
+                  <span class="week-badge week-a-badge">A</span>
+                  <span class="week-title">Semaine A</span>
+                </div>
+                <label class="checkbox-wrapper">
+                  <input
+                    type="checkbox"
+                    [(ngModel)]="sessionForm.weekA.enabled"
+                    name="weekAEnabled"
+                    (ngModelChange)="onWeekConfigChange()">
+                  <span class="checkbox-label">Activer</span>
+                </label>
+              </div>
+
+              <div class="week-content" *ngIf="sessionForm.weekA.enabled">
+                <div class="form-row">
+                  <div class="form-group">
+                    <label>Matière - Semaine A</label>
+                    <select
+                      class="form-select"
+                      [(ngModel)]="sessionForm.weekA.subjectId"
+                      name="weekASubjectId"
+                      (ngModelChange)="onWeekASubjectChange()"
+                      required>
+                      <option value="">Sélectionner une Matière</option>
+                      <option
+                        *ngFor="let subject of getTeacherSubjects(selectedTeacher!)"
+                        [value]="subject._id">
+                        {{subject.name || 'Matière Sans Nom'}}
+                      </option>
+                    </select>
+                  </div>
+
+                  <div class="form-group">
+                    <label>Classe - Semaine A</label>
+                    <select
+                      class="form-select"
+                      [(ngModel)]="sessionForm.weekA.classId"
+                      name="weekAClassId"
+                      (ngModelChange)="onWeekAClassChange()"
+                      [disabled]="!sessionForm.weekA.subjectId || availableClassesWeekA.length === 0">
+                      <option value="">Sélectionner une Classe</option>
+                      <option
+                        *ngFor="let cls of availableClassesWeekA"
+                        [value]="cls._id">
+                        {{getClassDisplayName(cls)}}
+                      </option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Configuration Semaine B -->
+            <div class="week-config week-b">
+              <div class="week-header">
+                <div class="week-indicator">
+                  <span class="week-badge week-b-badge">B</span>
+                  <span class="week-title">Semaine B</span>
+                </div>
+                <label class="checkbox-wrapper">
+                  <input
+                    type="checkbox"
+                    [(ngModel)]="sessionForm.weekB.enabled"
+                    name="weekBEnabled"
+                    (ngModelChange)="onWeekConfigChange()">
+                  <span class="checkbox-label">Activer</span>
+                </label>
+              </div>
+
+              <div class="week-content" *ngIf="sessionForm.weekB.enabled">
+                <div class="form-row">
+                  <div class="form-group">
+                    <label>Matière - Semaine B</label>
+                    <select
+                      class="form-select"
+                      [(ngModel)]="sessionForm.weekB.subjectId"
+                      name="weekBSubjectId"
+                      (ngModelChange)="onWeekBSubjectChange()"
+                      required>
+                      <option value="">Sélectionner une Matière</option>
+                      <option
+                        *ngFor="let subject of getTeacherSubjects(selectedTeacher!)"
+                        [value]="subject._id">
+                        {{subject.name || 'Matière Sans Nom'}}
+                      </option>
+                    </select>
+                  </div>
+
+                  <div class="form-group">
+                    <label>Classe - Semaine B</label>
+                    <select
+                      class="form-select"
+                      [(ngModel)]="sessionForm.weekB.classId"
+                      name="weekBClassId"
+                      (ngModelChange)="onWeekBClassChange()"
+                      [disabled]="!sessionForm.weekB.subjectId || availableClassesWeekB.length === 0">
+                      <option value="">Sélectionner une Classe</option>
+                      <option
+                        *ngFor="let cls of availableClassesWeekB"
+                        [value]="cls._id">
+                        {{getClassDisplayName(cls)}}
+                      </option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Détails de la Session -->
+          <div class="form-row">
+            <div class="form-group">
+              <label>Type de Session</label>
+              <select 
+                class="form-select"
+                [(ngModel)]="sessionForm.sessionType"
+                name="sessionType">
+                <option value="lecture">Cours Magistral</option>
+                <option value="practical">Travaux Pratiques</option>
+                <option value="lab">Laboratoire</option>
+                <option value="tutorial">Tutorat</option>
+                <option value="exam">Examen</option>
+                <option value="revision">Révision</option>
+                <option value="other">Autre</option>
+              </select>
+            </div>
+            
+            <div class="form-group">
+              <label>Salle</label>
+              <input 
+                type="text" 
+                class="form-input"
+                [(ngModel)]="sessionForm.room"
+                name="room"
+                placeholder="ex. Salle 101, Labo A">
+            </div>
+            
+          </div>
+          
+          <!-- Notes -->
+          <div class="form-group full-width">
+            <label>Notes (Optionnel)</label>
+            <textarea 
+              class="form-textarea"
+              [(ngModel)]="sessionForm.notes"
+              name="notes"
+              placeholder="Notes additionnelles pour cette session..."
+              rows="3">
+            </textarea>
+          </div>
+          
+          <!-- Messages de Validation -->
+          <div class="validation-messages" *ngIf="validationErrors.length > 0">
+            <div 
+              class="error-message"
+              *ngFor="let error of validationErrors">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"/>
+                <line x1="12" y1="8" x2="12" y2="12"/>
+                <line x1="12" y1="16" x2="12.01" y2="16"/>
+              </svg>
+              {{error}}
+            </div>
+          </div>
+          
+          <!-- Actions du Modal -->
+          <div class="modal-actions">
+            <button 
+              type="button" 
+              class="btn btn-secondary"
+              (click)="closeSessionModal()">
+              Annuler
+            </button>
+            
+            <button 
+              type="submit" 
+              class="btn btn-primary"
+              [disabled]="!isSessionFormValid()">
+              {{editingSession ? 'Mettre à Jour la Session' : 'Créer la Session'}}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal de Confirmation de Suppression de Session -->
+  <div 
+    class="modal-overlay"
+    *ngIf="showDeleteSessionModal"
+    (click)="closeDeleteSessionModal()">
+    
+    <div 
+      class="confirmation-modal"
+      (click)="$event.stopPropagation()">
+      
+      <div class="modal-header">
+        <h3>Confirmer la Suppression</h3>
+        <button class="close-btn" (click)="closeDeleteSessionModal()">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="18" y1="6" x2="6" y2="18"/>
+            <line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+        </button>
+      </div>
+      
+      <div class="modal-content">
+        <div class="confirmation-content" *ngIf="sessionToDelete">
+          <div class="warning-icon">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10"/>
+              <line x1="12" y1="8" x2="12" y2="12"/>
+              <line x1="12" y1="16" x2="12.01" y2="16"/>
+            </svg>
+          </div>
+          
+          <div class="confirmation-text">
+            <h4>Êtes-vous sûr de vouloir supprimer cette session ?</h4>
+            
+            <div class="session-details">
+              <div class="session-info-item">
+                <strong>Matière:</strong> {{getSessionSubjectName(sessionToDelete)}}
+              </div>
+              <div class="session-info-item">
+                <strong>Classe:</strong> {{sessionToDelete.className}}
+              </div>
+              <div class="session-info-item">
+                <strong>Horaire:</strong> {{sessionToDelete.formattedTime}}
+              </div>
+              <div class="session-info-item" *ngIf="sessionToDelete.room">
+                <strong>Salle:</strong> {{sessionToDelete.room}}
+              </div>
+            </div>
+            
+            <p class="warning-text">Cette action est irréversible.</p>
+          </div>
+        </div>
+        
+        <div class="modal-actions">
+          <button 
+            type="button" 
+            class="btn btn-secondary"
+            (click)="closeDeleteSessionModal()">
+            Annuler
+          </button>
+          
+          <button 
+            type="button" 
+            class="btn btn-danger"
+            (click)="confirmDeleteSession()">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="3 6 5 6 21 6"/>
+              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+            </svg>
+            Supprimer Définitivement
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal de Confirmation d'Effacement de Tout -->
+  <div 
+    class="modal-overlay"
+    *ngIf="showClearAllModal"
+    (click)="closeClearAllModal()">
+    
+    <div 
+      class="confirmation-modal"
+      (click)="$event.stopPropagation()">
+      
+      <div class="modal-header">
+        <h3>Confirmer l'Effacement</h3>
+        <button class="close-btn" (click)="closeClearAllModal()">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="18" y1="6" x2="6" y2="18"/>
+            <line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+        </button>
+      </div>
+      
+      <div class="modal-content">
+        <div class="confirmation-content">
+          <div class="warning-icon">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10"/>
+              <line x1="12" y1="8" x2="12" y2="12"/>
+              <line x1="12" y1="16" x2="12.01" y2="16"/>
+            </svg>
+          </div>
+          
+          <div class="confirmation-text">
+            <h4>Êtes-vous sûr de vouloir effacer toutes les sessions ?</h4>
+            <p class="session-count-text">
+              Cela supprimera définitivement <strong>{{sessions.length}}</strong> session(s) de l'emploi du temps.
+            </p>
+            <p class="warning-text">Cette action est irréversible.</p>
+          </div>
+        </div>
+        
+        <div class="modal-actions">
+          <button 
+            type="button" 
+            class="btn btn-secondary"
+            (click)="closeClearAllModal()">
+            Annuler
+          </button>
+          
+          <button 
+            type="button" 
+            class="btn btn-danger"
+            (click)="confirmClearAll()">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="3 6 5 6 21 6"/>
+              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+            </svg>
+            Effacer Tout
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Overlay de Chargement -->
+  <div class="loading-overlay" *ngIf="loading">
+    <div class="spinner"></div>
+    <p>{{loadingMessage}}</p>
+  </div>
+
+  <!-- Toaster Component -->
+  <app-toaster></app-toaster>
+</div>

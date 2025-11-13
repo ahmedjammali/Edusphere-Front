@@ -1,0 +1,860 @@
+/* exercise-form.component.css */
+
+.exercise-form {
+  width: 100%;
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+/* Form Sections */
+.form-section {
+  background: white;
+  border-radius: 15px;
+  padding: 2rem;
+  margin-bottom: 2rem;
+  box-shadow: 0 2px 10px rgba(98, 111, 71, 0.1);
+  animation: fadeIn 0.5s ease;
+}
+
+.form-section-title {
+  font-size: 1.25rem;
+  color: var(--color-primary-dark);
+  margin-bottom: 1.5rem;
+  position: relative;
+  padding-bottom: 0.75rem;
+}
+
+.form-section-title::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 50px;
+  height: 3px;
+  background: var(--color-accent);
+  border-radius: 2px;
+}
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+/* Form Grid */
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1.5rem;
+}
+
+/* Form Controls */
+.form-group {
+  margin-bottom: 1.5rem;
+}
+
+.form-label {
+  display: block;
+  font-weight: 500;
+  color: var(--color-primary-dark);
+  margin-bottom: 0.5rem;
+  font-size: 0.875rem;
+}
+
+.form-control {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border: 2px solid var(--color-gray);
+  border-radius: 10px;
+  font-size: 1rem;
+  font-family: inherit;
+  transition: all 0.3s ease;
+  background: white;
+}
+
+.form-control:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(164, 180, 101, 0.1);
+}
+
+.form-control.ng-invalid.ng-touched {
+  border-color: var(--color-error);
+}
+
+textarea.form-control {
+  resize: vertical;
+  min-height: 80px;
+}
+
+.small-input {
+  max-width: 120px;
+}
+
+/* Error Messages */
+.error-message {
+  color: var(--color-error);
+  font-size: 0.75rem;
+  margin-top: 0.25rem;
+  animation: slideInUp 0.3s ease;
+}
+/* Additional CSS for number input validation */
+
+/* Number inputs styling */
+input[type="number"].form-control {
+  -moz-appearance: textfield; /* Firefox */
+}
+
+input[type="number"].form-control::-webkit-outer-spin-button,
+input[type="number"].form-control::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* Enhanced error styling for required fields */
+.form-control.ng-invalid.ng-touched {
+  border-color: var(--color-error);
+  box-shadow: 0 0 0 3px rgba(244, 67, 54, 0.1);
+}
+
+/* Required field indicator */
+.form-label::after {
+  content: " *";
+  color: var(--color-error);
+  font-weight: normal;
+}
+
+/* Only show asterisk for optional fields by removing it */
+.form-group:has(input[formControlName="instructions"]) .form-label::after,
+.form-group:has(input[formControlName="dueDate"]) .form-label::after {
+  content: "";
+}
+
+/* Alternative approach if :has() is not supported */
+.form-label.optional::after {
+  content: "";
+}
+
+/* Validation state styling */
+.form-control:invalid {
+  border-color: var(--color-error);
+}
+
+.form-control:valid {
+  border-color: var(--color-success, #4CAF50);
+}
+
+/* Error message animation */
+.error-message {
+  animation: slideInUp 0.3s ease;
+  display: block;
+}
+
+@keyframes slideInUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.help-text {
+  color: var(--color-gray-dark);
+  font-size: 0.75rem;
+  margin-top: 0.25rem;
+  font-style: italic;
+}
+
+/* Difficulty Options */
+.difficulty-options {
+  display: flex;
+  gap: 1rem;
+}
+
+.radio-option {
+  flex: 1;
+  position: relative;
+  cursor: pointer;
+}
+
+.radio-option input[type="radio"] {
+  position: absolute;
+  opacity: 0;
+}
+
+.radio-label {
+  display: block;
+  padding: 0.75rem 1rem;
+  border: 2px solid var(--color-gray);
+  border-radius: 10px;
+  text-align: center;
+  font-weight: 500;
+  transition: all 0.3s ease;
+}
+
+.radio-option.selected .radio-label,
+.radio-option input[type="radio"]:checked + .radio-label {
+  border-color: var(--color-primary);
+  background: rgba(164, 180, 101, 0.1);
+  color: var(--color-primary-dark);
+}
+
+.radio-label.easy { color: #4CAF50; }
+.radio-label.medium { color: #FF9800; }
+.radio-label.hard { color: #F44336; }
+
+.radio-option.selected .radio-label.easy { 
+  background: rgba(76, 175, 80, 0.1); 
+  border-color: #4CAF50;
+}
+.radio-option.selected .radio-label.medium { 
+  background: rgba(255, 152, 0, 0.1); 
+  border-color: #FF9800;
+}
+.radio-option.selected .radio-label.hard { 
+  background: rgba(244, 67, 54, 0.1); 
+  border-color: #F44336;
+}
+
+/* Buttons */
+.add-question-btn,
+.add-option-btn,
+.add-blank-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  background: var(--color-primary);
+  color: white;
+  border: none;
+  border-radius: 20px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.add-question-btn:hover,
+.add-option-btn:hover,
+.add-blank-btn:hover {
+  background: var(--color-primary-dark);
+  transform: translateY(-2px);
+}
+
+.btn-icon {
+  font-size: 1rem;
+}
+
+/* Question Cards */
+.question-card {
+  background: var(--color-gray-light);
+  border-radius: 15px;
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+  position: relative;
+  animation: slideInUp 0.4s ease;
+}
+
+.question-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.question-number {
+  font-size: 1.1rem;
+  color: var(--color-primary-dark);
+  margin: 0;
+}
+
+.remove-btn {
+  background: rgba(244, 67, 54, 0.1);
+  border: none;
+  border-radius: 50%;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.remove-btn:hover {
+  background: rgba(244, 67, 54, 0.2);
+  transform: rotate(90deg);
+}
+
+.remove-icon {
+  color: #F44336;
+  font-size: 1.25rem;
+}
+
+/* Options Section */
+.options-section {
+  margin-top: 1rem;
+}
+
+.option-item {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 0.75rem;
+  animation: slideInLeft 0.3s ease;
+}
+
+.option-input {
+  flex: 1;
+}
+
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  user-select: none;
+}
+
+.checkbox-label input[type="checkbox"] {
+  display: none;
+}
+
+.checkbox-custom {
+  width: 20px;
+  height: 20px;
+  border: 2px solid var(--color-gray-dark);
+  border-radius: 4px;
+  transition: all 0.3s ease;
+  position: relative;
+}
+
+.checkbox-label input[type="checkbox"]:checked + .checkbox-custom {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+}
+
+.checkbox-label input[type="checkbox"]:checked + .checkbox-custom::after {
+  content: '✓';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: white;
+  font-size: 0.75rem;
+  font-weight: bold;
+}
+
+.remove-option-btn,
+.remove-blank-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.remove-option-btn:hover,
+.remove-blank-btn:hover {
+  transform: scale(1.2);
+}
+
+/* Blanks Section */
+.blanks-section {
+  margin-top: 1rem;
+}
+
+.blank-item {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 0.75rem;
+}
+
+.blank-number {
+  font-weight: 500;
+  color: var(--color-primary-dark);
+  min-width: 70px;
+}
+
+.blank-input {
+  flex: 1;
+}
+
+/* Empty State */
+.empty-questions {
+  text-align: center;
+  padding: 3rem;
+  background: var(--color-gray-light);
+  border-radius: 15px;
+  border: 2px dashed var(--color-gray);
+}
+
+.empty-icon {
+  font-size: 3rem;
+  margin-bottom: 1rem;
+  opacity: 0.5;
+}
+
+.empty-text {
+  color: var(--color-gray-dark);
+  margin-bottom: 1.5rem;
+}
+
+/* Form Actions */
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 1rem;
+  margin-top: 2rem;
+  padding-top: 2rem;
+  border-top: 1px solid var(--color-gray);
+}
+
+.cancel-btn,
+.submit-btn {
+  padding: 0.75rem 2rem;
+  border: none;
+  border-radius: 25px;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.cancel-btn {
+  background: white;
+  color: var(--color-gray-dark);
+  border: 2px solid var(--color-gray);
+}
+
+.cancel-btn:hover {
+  background: var(--color-gray-light);
+}
+
+.submit-btn {
+  background: linear-gradient(135deg, var(--color-primary-dark), var(--color-primary));
+  color: white;
+  min-width: 150px;
+}
+
+.submit-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(98, 111, 71, 0.3);
+}
+
+.submit-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Loading State */
+.loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: white;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .form-section {
+    padding: 1.5rem;
+  }
+  
+  .form-grid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+  
+  .difficulty-options {
+    flex-direction: column;
+  }
+  
+  .option-item {
+    flex-wrap: wrap;
+  }
+  
+  .option-input {
+    width: 100%;
+    margin-bottom: 0.5rem;
+  }
+  
+  .form-actions {
+    flex-direction: column-reverse;
+  }
+  
+  .cancel-btn,
+  .submit-btn {
+    width: 100%;
+  }
+}
+
+
+/* Additional CSS for question validation */
+
+/* Question error styling */
+.question-error {
+  background: rgba(244, 67, 54, 0.1);
+  border: 1px solid rgba(244, 67, 54, 0.3);
+  border-radius: 8px;
+  padding: 1rem;
+  margin-bottom: 1.5rem;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.question-error::before {
+  content: "⚠️";
+  font-size: 1.25rem;
+}
+
+/* Empty state warning */
+.empty-warning {
+  color: var(--color-error);
+  font-weight: 500;
+  margin: 0.5rem 0 1rem 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+/* Validation summary */
+.validation-summary {
+  background: rgba(244, 67, 54, 0.05);
+  border: 2px solid rgba(244, 67, 54, 0.2);
+  border-radius: 12px;
+  padding: 1.5rem;
+  margin-top: 1rem;
+  animation: slideInUp 0.3s ease;
+}
+
+.validation-summary h4 {
+  color: var(--color-error);
+  margin: 0 0 1rem 0;
+  font-size: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.validation-summary h4::before {
+  content: "❌";
+  font-size: 1.25rem;
+}
+
+.validation-summary ul {
+  margin: 0;
+  padding-left: 1.5rem;
+  list-style-type: disc;
+}
+
+.validation-summary li {
+  color: var(--color-error);
+  margin-bottom: 0.5rem;
+  font-weight: 500;
+}
+
+.validation-summary li:last-child {
+  margin-bottom: 0;
+}
+
+/* Enhanced submit button disabled state */
+.submit-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+.submit-btn:disabled:hover {
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+/* Question section title with required indicator */
+.form-section-title {
+  position: relative;
+}
+
+.form-section-title:has-text("Questions")::after {
+  content: " *";
+  color: var(--color-error);
+  font-weight: normal;
+}
+
+/* Alternative for Questions title if :has-text is not supported */
+.questions-title::after {
+  content: " *";
+  color: var(--color-error);
+  font-weight: normal;
+}
+
+/* Enhanced form validation states */
+.form-section.has-errors {
+  border-left: 4px solid var(--color-error);
+  background: rgba(244, 67, 54, 0.02);
+}
+
+/* Question card validation states */
+.question-card.ng-invalid.ng-touched {
+  border-left: 4px solid var(--color-error);
+  background: rgba(244, 67, 54, 0.02);
+}
+
+/* Success state for valid questions */
+.question-card.ng-valid.ng-touched {
+  border-left: 4px solid var(--color-success, #4CAF50);
+  background: rgba(76, 175, 80, 0.02);
+}
+
+/* Form progress indicator */
+.form-progress {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  padding: 1rem;
+  background: var(--color-gray-light);
+  border-radius: 10px;
+}
+
+.progress-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+}
+
+.progress-item.completed {
+  color: var(--color-success, #4CAF50);
+}
+
+.progress-item.pending {
+  color: var(--color-gray-dark);
+}
+
+.progress-item.error {
+  color: var(--color-error);
+}
+
+.progress-icon {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  font-weight: bold;
+}
+
+.progress-item.completed .progress-icon {
+  background: var(--color-success, #4CAF50);
+  color: white;
+}
+
+.progress-item.pending .progress-icon {
+  background: var(--color-gray);
+  color: var(--color-gray-dark);
+}
+
+.progress-item.error .progress-icon {
+  background: var(--color-error);
+  color: white;
+}
+
+/* Question counter */
+.question-counter {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+  color: var(--color-primary-dark);
+  margin-bottom: 1rem;
+}
+
+.question-counter .count {
+  background: var(--color-primary);
+  color: white;
+  padding: 0.25rem 0.75rem;
+  border-radius: 15px;
+  font-weight: 500;
+}
+
+.question-counter.empty {
+  color: var(--color-error);
+}
+
+.question-counter.empty .count {
+  background: var(--color-error);
+}
+
+/* Improved empty state */
+.empty-questions {
+  text-align: center;
+  padding: 3rem;
+  background: var(--color-gray-light);
+  border-radius: 15px;
+  border: 2px dashed var(--color-error);
+  position: relative;
+}
+
+.empty-questions::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: repeating-linear-gradient(
+    45deg,
+    transparent,
+    transparent 10px,
+    rgba(244, 67, 54, 0.05) 10px,
+    rgba(244, 67, 54, 0.05) 20px
+  );
+  border-radius: 13px;
+  pointer-events: none;
+}
+
+.empty-questions > * {
+  position: relative;
+  z-index: 1;
+}
+
+/* Responsive validation summary */
+@media (max-width: 768px) {
+  .validation-summary {
+    padding: 1rem;
+    margin-top: 1rem;
+  }
+  
+  .validation-summary h4 {
+    font-size: 0.875rem;
+  }
+  
+  .validation-summary li {
+    font-size: 0.875rem;
+  }
+  
+  .question-error {
+    padding: 0.75rem;
+    font-size: 0.875rem;
+  }
+  
+  .form-progress {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .progress-item {
+    justify-content: center;
+  }
+}
+
+/* Animation for question addition/removal */
+@keyframes slideInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideInLeft {
+  from {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* Pulse animation for error states */
+@keyframes pulse {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.05);
+  }
+}
+
+.error-message {
+  animation: slideInUp 0.3s ease, pulse 0.5s ease 0.3s;
+}
+
+/* Hover effects for interactive elements */
+.question-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 15px rgba(98, 111, 71, 0.15);
+  transition: all 0.3s ease;
+}
+
+.add-question-btn:hover,
+.add-option-btn:hover,
+.add-blank-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 15px rgba(164, 180, 101, 0.3);
+}
+
+/* Focus states for accessibility */
+.form-control:focus,
+.add-question-btn:focus,
+.submit-btn:focus,
+.cancel-btn:focus {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .error-message {
+    background: var(--color-error);
+    color: white;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+  }
+  
+  .validation-summary {
+    border-width: 3px;
+  }
+  
+  .question-error {
+    border-width: 2px;
+  }
+}

@@ -1,0 +1,415 @@
+<!-- payment-config.component.html - Compact Version -->
+<div class="payment-config-container">
+  <!-- Compact Header -->
+  <header class="config-header">
+    <div class="header-content">
+      <div class="title-section">
+        <h1 class="page-title">
+          <span class="title-icon">⚙️</span>
+          {{ getConfigurationTitle() }}
+        </h1>
+        <p class="page-subtitle">
+          <span *ngIf="isCreatingNew" class="new-config-badge">✨ Nouvelle Configuration</span>
+          <span *ngIf="!isCreatingNew" class="existing-config-badge">📝 Modification</span>
+          Année académique {{ configForm.get('academicYear')?.value }}
+        </p>
+      </div>
+      <div class="header-actions">
+
+        
+        <button class="btn btn-outline" (click)="onCancel()">
+          <span class="btn-icon">⬅️</span>
+          Retour
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Configuration Form -->
+  <div class="config-content">
+    <form [formGroup]="configForm" (ngSubmit)="onSubmit()" class="config-form">
+      
+      <!-- Top Grid: Academic Year + Payment Schedule -->
+      <div class="config-grid">
+        <!-- Academic Year Selection -->
+        <section class="config-section">
+          <h2 class="section-title">
+            <span class="section-icon">🎓</span>
+            Année Académique
+          </h2>
+          <div class="form-group">
+            <label for="academicYear" class="form-label">Année scolaire</label>
+            <select 
+              id="academicYear"
+              [value]="configForm.get('academicYear')?.value"
+              (change)="onAcademicYearChange($event)"
+              class="form-select">
+              <option *ngFor="let year of academicYears" [value]="year">
+                {{ year }}
+                <span *ngIf="year === currentAcademicYear">(Actuelle)</span>
+              </option>
+            </select>
+            <div class="field-error" *ngIf="isFieldInvalid('academicYear')">
+              {{ getFieldError('academicYear') }}
+            </div>
+          </div>
+        </section>
+
+        <!-- Payment Schedule - Compact -->
+        <section class="config-section">
+          <h2 class="section-title">
+            <span class="section-icon">📅</span>
+            Calendrier de Paiement
+          </h2>
+          <div formGroupName="paymentSchedule" class="schedule-inline">
+            <div class="form-group">
+              <label for="startMonth" class="form-label">Début</label>
+              <select id="startMonth" formControlName="startMonth" class="form-select">
+                <option *ngFor="let month of months" [value]="month.value">
+                  {{ month.label }}
+                </option>
+              </select>
+              <div class="field-error" *ngIf="isFieldInvalid('paymentSchedule.startMonth')">
+                {{ getFieldError('paymentSchedule.startMonth') }}
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="endMonth" class="form-label">Fin</label>
+              <select id="endMonth" formControlName="endMonth" class="form-select">
+                <option *ngFor="let month of months" [value]="month.value">
+                  {{ month.label }}
+                </option>
+              </select>
+              <div class="field-error" *ngIf="isFieldInvalid('paymentSchedule.endMonth')">
+                {{ getFieldError('paymentSchedule.endMonth') }}
+              </div>
+            </div>
+            <div class="schedule-summary">
+              {{ calculateTotalMonths() }} mois
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <!-- Grade Amounts - Organized by Categories -->
+      <section class="config-section">
+        <h2 class="section-title">
+          <span class="section-icon">💰</span>
+          Frais de Scolarité par Niveau
+        </h2>
+        
+        <div formGroupName="gradeAmounts" class="grades-container">
+          
+          <!-- Maternelle Category -->
+          <div class="grade-category">
+            <h3 class="category-title">
+              <span class="category-icon">🏠</span>
+              Maternelle
+            </h3>
+            <div class="grades-grid">
+              <div class="grade-card maternal-card">
+                <div class="grade-header">
+                  <div class="grade-icon maternal-icon">👶</div>
+                  <span class="grade-name">Maternelle</span>
+                </div>
+                <div class="form-group">
+                  <div class="input-group">
+                    <span class="input-prefix">TND</span>
+                    <input 
+                      type="number" 
+                      formControlName="Maternal" 
+                      min="0"
+                      class="form-input"
+                      placeholder="0">
+                  </div>
+                  <div class="field-error" *ngIf="isFieldInvalid('gradeAmounts.Maternal')">
+                    {{ getFieldError('gradeAmounts.Maternal') }}
+                  </div>
+                  <div class="monthly-display">
+                    {{ formatCurrency(calculateMonthlyAmount('Maternal')) }}/mois
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Primaire Category -->
+          <div class="grade-category">
+            <h3 class="category-title">
+              <span class="category-icon">📚</span>
+              Primaire
+            </h3>
+            <div class="grades-grid">
+              <div class="grade-card primaire-card" *ngFor="let grade of getPrimaryGrades()">
+                <div class="grade-header">
+                  <div class="grade-icon primaire-icon">📖</div>
+                  <span class="grade-name">{{ getGradeDisplayName(grade) }}</span>
+                </div>
+                <div class="form-group">
+                  <div class="input-group">
+                    <span class="input-prefix">TND</span>
+                    <input 
+                      type="number" 
+                      [formControlName]="grade" 
+                      min="0"
+                      class="form-input"
+                      placeholder="0">
+                  </div>
+                  <div class="field-error" *ngIf="isFieldInvalid('gradeAmounts.' + grade)">
+                    {{ getFieldError('gradeAmounts.' + grade) }}
+                  </div>
+                  <div class="monthly-display">
+                    {{ formatCurrency(calculateMonthlyAmount(grade)) }}/mois
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Secondaire Category -->
+          <div class="grade-category">
+            <h3 class="category-title">
+              <span class="category-icon">🎓</span>
+              Secondaire (Collège + Lycée)
+            </h3>
+            <div class="grades-grid">
+              <div class="grade-card secondaire-card" *ngFor="let grade of getSecondaryGrades()">
+                <div class="grade-header">
+                  <div class="grade-icon secondaire-icon">🎓</div>
+                  <span class="grade-name">{{ getGradeDisplayName(grade) }}</span>
+                </div>
+                <div class="form-group">
+                  <div class="input-group">
+                    <span class="input-prefix">TND</span>
+                    <input 
+                      type="number" 
+                      [formControlName]="grade" 
+                      min="0"
+                      class="form-input"
+                      placeholder="0">
+                  </div>
+                  <div class="field-error" *ngIf="isFieldInvalid('gradeAmounts.' + grade)">
+                    {{ getFieldError('gradeAmounts.' + grade) }}
+                  </div>
+                  <div class="monthly-display">
+                    {{ formatCurrency(calculateMonthlyAmount(grade)) }}/mois
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Services & Settings - Inline Options -->
+      <div class="inline-options">
+        <!-- Uniform Configuration -->
+        <div class="option-card">
+          <h3 class="section-title">
+            <span class="section-icon">👔</span>
+            Uniforme Scolaire
+          </h3>
+          <div formGroupName="uniform">
+            <div class="option-toggle">
+              <input type="checkbox" formControlName="enabled" class="checkbox-input" id="uniformEnabled">
+              <label for="uniformEnabled" class="checkbox-text">Activer l'uniforme</label>
+            </div>
+            <div class="option-fields" *ngIf="configForm.get('uniform.enabled')?.value">
+              <div class="form-group">
+                <label class="form-label">Prix</label>
+                <div class="input-group">
+                  <span class="input-prefix">TND</span>
+                  <input type="number" formControlName="price" min="0" class="form-input" placeholder="0">
+                </div>
+                <div class="field-error" *ngIf="isFieldInvalid('uniform.price')">
+                  {{ getFieldError('uniform.price') }}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Transportation Configuration -->
+        <div class="option-card">
+          <h3 class="section-title">
+            <span class="section-icon">🚌</span>
+            Transport Scolaire
+          </h3>
+          <div formGroupName="transportation">
+            <div class="option-toggle">
+              <input type="checkbox" formControlName="enabled" class="checkbox-input" id="transportEnabled">
+              <label for="transportEnabled" class="checkbox-text">Activer le transport</label>
+            </div>
+            <div class="transport-zones" *ngIf="configForm.get('transportation.enabled')?.value">
+              <div formGroupName="tariffs" class="zones-container">
+                <div class="zone-card" formGroupName="close">
+                  <div class="zone-header">
+                    <span class="zone-icon">🏠</span>
+                    <span class="zone-name">Zone Proche</span>
+                    <div class="zone-toggle-inline">
+                      <input type="checkbox" formControlName="enabled" class="checkbox-input" id="closeZoneEnabled">
+                      <label for="closeZoneEnabled" class="checkbox-text">Activer</label>
+                    </div>
+                  </div>
+                  <div class="form-group" *ngIf="configForm.get('transportation.tariffs.close.enabled')?.value">
+                    <label class="form-label">Prix mensuel</label>
+                    <div class="input-group">
+                      <span class="input-prefix">TND</span>
+                      <input type="number" formControlName="monthlyPrice" min="0" class="form-input" placeholder="0">
+                    </div>
+                    <div class="field-error" *ngIf="isFieldInvalid('transportation.tariffs.close.monthlyPrice')">
+                      {{ getFieldError('transportation.tariffs.close.monthlyPrice') }}
+                    </div>
+                  </div>
+                </div>
+                
+                <div class="zone-card" formGroupName="far">
+                  <div class="zone-header">
+                    <span class="zone-icon">🚌</span>
+                    <span class="zone-name">Zone Éloignée</span>
+                    <div class="zone-toggle-inline">
+                      <input type="checkbox" formControlName="enabled" class="checkbox-input" id="farZoneEnabled">
+                      <label for="farZoneEnabled" class="checkbox-text">Activer</label>
+                    </div>
+                  </div>
+                  <div class="form-group" *ngIf="configForm.get('transportation.tariffs.far.enabled')?.value">
+                    <label class="form-label">Prix mensuel</label>
+                    <div class="input-group">
+                      <span class="input-prefix">TND</span>
+                      <input type="number" formControlName="monthlyPrice" min="0" class="form-input" placeholder="0">
+                    </div>
+                    <div class="field-error" *ngIf="isFieldInvalid('transportation.tariffs.far.monthlyPrice')">
+                      {{ getFieldError('transportation.tariffs.far.monthlyPrice') }}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- Add this section after the Transportation Configuration in the inline-options div -->
+
+        <!-- Inscription Fee Configuration -->
+        <div class="option-card">
+          <h3 class="section-title">
+            <span class="section-icon">📝</span>
+            Frais d'Inscription
+          </h3>
+          <div formGroupName="inscriptionFee">
+            <div class="option-toggle">
+              <input type="checkbox" formControlName="enabled" class="checkbox-input" id="inscriptionEnabled">
+              <label for="inscriptionEnabled" class="checkbox-text">Activer les frais d'inscription</label>
+            </div>
+            <div class="option-fields" *ngIf="configForm.get('inscriptionFee.enabled')?.value">
+              <div formGroupName="prices" class="inscription-prices">
+                <div class="form-group">
+                  <label class="form-label">Maternelle & Primaire</label>
+                  <div class="input-group">
+                    <span class="input-prefix">TND</span>
+                    <input type="number" formControlName="maternelleAndPrimaire" min="0" class="form-input" placeholder="0">
+                  </div>
+                  <div class="field-error" *ngIf="isFieldInvalid('inscriptionFee.prices.maternelleAndPrimaire')">
+                    {{ getFieldError('inscriptionFee.prices.maternelleAndPrimaire') }}
+                  </div>
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Collège & Lycée</label>
+                  <div class="input-group">
+                    <span class="input-prefix">TND</span>
+                    <input type="number" formControlName="collegeAndLycee" min="0" class="form-input" placeholder="0">
+                  </div>
+                  <div class="field-error" *ngIf="isFieldInvalid('inscriptionFee.prices.collegeAndLycee')">
+                    {{ getFieldError('inscriptionFee.prices.collegeAndLycee') }}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Bottom Settings Row -->
+      <div class="settings-row">
+        <!-- Grace Period -->
+        <div class="settings-card">
+          <h3 class="section-title">
+            <span class="section-icon">⏰</span>
+            Période de Grâce
+          </h3>
+          <div class="form-group">
+            <label class="form-label">Délai (jours)</label>
+            <div class="input-group">
+              <span class="input-prefix">⏳</span>
+              <input 
+                type="number" 
+                formControlName="gracePeriod" 
+                min="0" 
+                max="30"
+                class="form-input" 
+                placeholder="5">
+            </div>
+            <div class="field-error" *ngIf="isFieldInvalid('gracePeriod')">
+              {{ getFieldError('gracePeriod') }}
+            </div>
+          </div>
+        </div>
+
+
+
+        <!-- Configuration Status -->
+        <div class="settings-card" *ngIf="currentConfig && !isCreatingNew">
+          <h3 class="section-title">
+            <span class="section-icon">ℹ️</span>
+            Statut
+          </h3>
+          <div class="form-group">
+            <label class="form-label">Dernière modification</label>
+            <div class="status-info">
+              {{ formatDate(currentConfig.updatedAt) }}
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Statut</label>
+            <span [class]="'status-badge ' + (currentConfig.isActive ? 'active' : 'inactive')">
+              {{ currentConfig.isActive ? '✓ Active' : '✗ Inactive' }}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="actions-section">
+        <div class="actions-left">
+          <button 
+            type="button" 
+            class="btn btn-secondary" 
+            (click)="resetForm()" 
+            [disabled]="isLoading">
+            <span class="btn-icon">🔄</span>
+            Réinitialiser
+          </button>
+        </div>
+        
+        <div class="actions-right">
+          <button type="button" class="btn btn-secondary" (click)="onCancel()" [disabled]="isLoading">
+            Annuler
+          </button>
+          <button type="submit" class="btn btn-primary" [disabled]="configForm.invalid || isLoading">
+            <span class="btn-spinner" *ngIf="isLoading">⏳</span>
+            <span *ngIf="!isLoading && isCreatingNew">✨ Créer la Configuration</span>
+            <span *ngIf="!isLoading && !isCreatingNew">💾 Mettre à Jour</span>
+            <span *ngIf="isLoading">{{ isCreatingNew ? 'Création...' : 'Mise à jour...' }}</span>
+          </button>
+        </div>
+      </div>
+    </form>
+  </div>
+
+  <!-- Loading Overlay -->
+  <div class="loading-overlay" *ngIf="isLoading">
+    <div class="loading-spinner">
+      <div class="spinner"></div>
+      <p>{{ isCreatingNew ? 'Création de la configuration...' : 'Mise à jour de la configuration...' }}</p>
+    </div>
+  </div>
+</div>
